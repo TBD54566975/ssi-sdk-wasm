@@ -10,7 +10,7 @@
 
 # WASM bindings of ssi-sdk into javascript
 
-https://github.com/TBD54566975/ssi-sdk is the home of self soverign stuff at TBD, implented in golang. 
+The home of self soverign stuff at TBD, implented in golang. 
 We want to use this from the web as well, this minimal demo shows how. WASM code generated from here: https://github.com/TBD54566975/ssi-sdk
 
 `webserver` is a sample webserver which serves up a sample js app from `static` which also contains the wasm bindings and wasm "binary".

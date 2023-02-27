@@ -1,10 +1,14 @@
 {
   "name": "ssi-sdk-wasm",
-  "version": "1.0.0",
-  "description": "Congrats, project leads! You got a new project to grow!",
-  "main": "index.js",
+  "version": "1.0.1",
+  "description": "All things self sovereign identity",
+  "main": "dist/ssi-sdk-wasm.cjs.js",
+  "module": "dist/ssi-sdk-wasm.esm.js",
+  "browser": "dist/ssi-sdk-wasm.umd.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rollup -c",
+    "test": "node test/spec",
+    "pretest": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -17,6 +21,20 @@
   },
   "homepage": "https://github.com/TBD54566975/ssi-sdk-wasm#readme",
   "devDependencies": {
-    "@types/node": "^18.14.1"
+    "@babel/core": "^7.21.0",
+    "@babel/preset-env": "^7.20.2",
+    "@types/node": "^18.14.1",
+    "rollup": "^2.79.1",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "webassembly-loader": "^1.1.0"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {
+    "xhr2": "^0.2.1"
   }
 }
