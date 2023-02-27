@@ -12,7 +12,7 @@ function getSquarer() {
     if (squarerPromise) {
       return squarerPromise;
     } else {
-      squarerPromise = loadWebAssembly('squarer.wasm')
+      squarerPromise = loadWebAssembly('http://127.0.0.1:8887/squarer.wasm')
         .then(instance => {
           return instance.exports._Z7squareri;
         });
@@ -20,4 +20,5 @@ function getSquarer() {
     }
   }
 
+  getSquarer()
 module.exports = getSquarer;
