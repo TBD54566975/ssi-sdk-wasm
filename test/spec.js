@@ -1,6 +1,11 @@
 const assert = require('assert');
-const getSquarer = require('..');
+const getSSISDK = require('..');
 
-getSquarer().then(squarer => {
-  assert(squarer(5) === 25, "squarer(5) should be 25")
+getSSISDK().then(makeDid => {
+  let did = makeDid()
+
+  console.log("MAKE DID:")
+  console.log(did)
+  
+  assert.equal(did.id.includes("did"), true)
 });

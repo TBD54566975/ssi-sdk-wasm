@@ -1,6 +1,6 @@
 {
   "name": "ssi-sdk-wasm",
-  "version": "1.0.3",
+  "version": "1.0.10",
   "description": "All things self sovereign identity",
   "main": "dist/ssi-sdk-wasm.cjs.js",
   "module": "dist/ssi-sdk-wasm.esm.js",
@@ -35,6 +35,7 @@
     "src"
   ],
   "dependencies": {
+    "atob": "^2.1.2",
     "xhr2": "^0.2.1"
   }
 }
