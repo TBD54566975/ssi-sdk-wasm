@@ -8,7 +8,7 @@
       "start": "node app.js"
     },
     "dependencies": {
-        "ssi-sdk-wasm": "^1.0.10"
+        "ssi-sdk-wasm": "^1.0.12"
     },
     "keywords": [],
     "author": "",

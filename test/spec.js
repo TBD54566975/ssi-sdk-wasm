@@ -1,11 +1,10 @@
 const assert = require('assert');
-const getSSISDK = require('..');
+const loadWasm = require('..');
 
-getSSISDK().then(makeDid => {
-  let did = makeDid()
+(async () => {
+  const wasmExports = await loadWasm();
+  const did = wasmExports.makeDid();
 
-  console.log("MAKE DID:")
-  console.log(did)
-  
   assert.equal(did.id.includes("did"), true)
-});
+  console.log('Result from WASM function:', did);
+})();

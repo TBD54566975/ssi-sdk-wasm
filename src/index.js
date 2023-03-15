@@ -1,57 +1,41 @@
-globalThis.fs = require('fs');
-globalThis.crypto ??= require("crypto");
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
 
+global.crypto ??= require("crypto");
+
+// Include the wasm_exec.js file
 require('./wasm_exec');
-const go = new Go();
 
-function loadWebAssembly() {
-  if (this != undefined && this.window != undefined) {
-    // TODO: fetch wasm locally:
-    return fetch('http://127.0.0.1:8887/main.wasm')
-    .then(response => response.arrayBuffer())
-    .then(buffer => WebAssembly.compile(buffer))
-    .then(module => {
-      let instance = new WebAssembly.Instance(module, go.importObject)
-      go.run(instance);
-      return globalThis["makeDid"]
-    });
-  } else {
-    const path = require('path');
-    const fs = require('fs');
+const wasmFilePath = path.join(__dirname, 'main.wasm');
+const readFile = util.promisify(fs.readFile);
 
-    const filePath = path.join(__dirname, 'main.wasm');
-    const buffer = fs.readFileSync(filePath);
-    
-    // const buffer = fs.readFileSync('./main.wasm');
-    return WebAssembly.compile(buffer)
-      .then(module => {
-        let instance = new WebAssembly.Instance(module, go.importObject);
-        go.run(instance);
-        return globalThis["makeDid"];
-      });
-  }
-};
+async function loadWasm() {
+  const wasmFile = await readFile(wasmFilePath);
 
+  // Instantiate the Go object
+  const go = new Go();
 
-let sdkPromise;
+  // Compile and instantiate the WASM module with the Go import object
+  const wasmModule = await WebAssembly.compile(wasmFile);
+  const wasmInstance = await WebAssembly.instantiate(wasmModule, go.importObject);
 
-function getSSISDK() {
-  if (sdkPromise) {
-    return sdkPromise;
-  } else {
-    sdkPromise = loadWebAssembly()
-      .then(makeDidFunc => {
-        return makeDidFunc
-      });
-    return sdkPromise;
-  }
+  // Run the Go instance
+  go.run(wasmInstance);
+
+  // Access the JavaScript function created in the Go code
+  const makeDid = global.makeDid;
+
+  return {
+    makeDid
+  };
 }
 
-module.exports = getSSISDK;
+module.exports = loadWasm;
 
-// getSSISDK().then((sdk) => {
-//   console.log("SDK:")
-//   console.log(sdk)
-//   console.log("CALL IT:")
-//   console.log(sdk())
-// })
+// For Testing
+// (async () => {
+//     const wasmExports = await loadWasm();
+//     const result = wasmExports.makeDid();
+//     console.log('Result from WASM function:', result);
+//   })();

@@ -1,8 +1,8 @@
-const getSSISDK = require('ssi-sdk-wasm');
+const loadWasm = require('ssi-sdk-wasm');
 
 console.log("NODE JS EXAMPLE:")
 
-getSSISDK().then(makeDid => {
+loadWasm().then(wasmExports => {
     console.log("DID:")
-    console.log(makeDid())
+    console.log(wasmExports.makeDid())
 })

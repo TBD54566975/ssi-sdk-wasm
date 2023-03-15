@@ -1,14 +1,15 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('fs'), require('crypto'), require('path')) :
-  typeof define === 'function' && define.amd ? define(['fs', 'crypto', 'path'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global["ssi-sdk-wasm"] = factory(global.fs$1, global.crypto, global.path));
-})(this, (function (fs$1, crypto, path) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('fs'), require('path'), require('util'), require('crypto')) :
+  typeof define === 'function' && define.amd ? define(['fs', 'path', 'util', 'crypto'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global["ssi-sdk-wasm"] = factory(global.fs$1, global.path, global.util, global.crypto$1));
+})(this, (function (fs$1, path, util, crypto$1) { 'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
   var fs__default = /*#__PURE__*/_interopDefaultLegacy(fs$1);
-  var crypto__default = /*#__PURE__*/_interopDefaultLegacy(crypto);
   var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
+  var util__default = /*#__PURE__*/_interopDefaultLegacy(util);
+  var crypto__default = /*#__PURE__*/_interopDefaultLegacy(crypto$1);
 
   function _regeneratorRuntime() {
     _regeneratorRuntime = function () {
@@ -387,6 +388,8 @@
     return typeof key === "symbol" ? key : String(key);
   }
 
+  var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
   // Copyright 2018 The Go Authors. All rights reserved.
   (function () {
     var enosys = function enosys() {
@@ -410,8 +413,8 @@
           outputBuf += decoder.decode(buf);
           var nl = outputBuf.lastIndexOf("\n");
           if (nl != -1) {
-            console.log(outputBuf.substr(0, nl));
-            outputBuf = outputBuf.substr(nl + 1);
+            console.log(outputBuf.substring(0, nl));
+            outputBuf = outputBuf.substring(nl + 1);
           }
           return buf.length;
         },
@@ -524,11 +527,9 @@
         }
       };
     }
-
-    // if (!globalThis.crypto) {
-    // 	throw new Error("globalThis.crypto is not available, polyfill required (crypto.getRandomValues only)");
-    // }
-
+    if (!globalThis.crypto) {
+      throw new Error("globalThis.crypto is not available, polyfill required (crypto.getRandomValues only)");
+    }
     if (!globalThis.performance) {
       throw new Error("globalThis.performance is not available, polyfill required (performance.now only)");
     }
@@ -644,6 +645,12 @@
         };
         var timeOrigin = Date.now() - performance.now();
         this.importObject = {
+          _gotest: {
+            add: function add(a, b) {
+              return a + b;
+            }
+          },
+          // TODO: This is changed from gojs to go in order for the wasm_exec.js to work
           go: {
             // Go's SP does not change as long as no Go code is running. Some operations (e.g. calls, getters and setters)
             // may synchronously trigger a Go event handler. This makes Go code get executed in the middle of the imported
@@ -713,6 +720,8 @@
             },
             // func getRandomData(r []byte)
             "runtime.getRandomData": function runtimeGetRandomData(sp) {
+              sp >>>= 0;
+              crypto.getRandomValues(loadSlice(sp + 8));
             },
             // func finalizeRef(v ref)
             "syscall/js.finalizeRef": function syscallJsFinalizeRef(sp) {
@@ -978,48 +987,53 @@
     }();
   })();
 
-  var _globalThis$crypto;
-  globalThis.fs = fs__default["default"];
-  (_globalThis$crypto = globalThis.crypto) !== null && _globalThis$crypto !== void 0 ? _globalThis$crypto : globalThis.crypto = crypto__default["default"];
-  var go = new Go();
-  function loadWebAssembly() {
-    if (this != undefined && this.window != undefined) {
-      // TODO: fetch wasm locally:
-      return fetch('http://127.0.0.1:8887/main.wasm').then(function (response) {
-        return response.arrayBuffer();
-      }).then(function (buffer) {
-        return WebAssembly.compile(buffer);
-      }).then(function (module) {
-        var instance = new WebAssembly.Instance(module, go.importObject);
-        go.run(instance);
-        return globalThis["makeDid"];
-      });
-    } else {
-      var path = path__default["default"];
-      var fs = fs__default["default"];
-      var filePath = path.join(__dirname, 'main.wasm');
-      var buffer = fs.readFileSync(filePath);
+  var _commonjsHelpers$comm, _commonjsHelpers$comm2;
+  (_commonjsHelpers$comm2 = (_commonjsHelpers$comm = commonjsGlobal).crypto) !== null && _commonjsHelpers$comm2 !== void 0 ? _commonjsHelpers$comm2 : _commonjsHelpers$comm.crypto = crypto__default["default"];
 
-      // const buffer = fs.readFileSync('./main.wasm');
-      return WebAssembly.compile(buffer).then(function (module) {
-        var instance = new WebAssembly.Instance(module, go.importObject);
-        go.run(instance);
-        return globalThis["makeDid"];
-      });
-    }
+  // Include the wasm_exec.js file
+
+  var wasmFilePath = path__default["default"].join(__dirname, 'main.wasm');
+  var readFile = util__default["default"].promisify(fs__default["default"].readFile);
+  function loadWasm() {
+    return _loadWasm.apply(this, arguments);
   }
-  var sdkPromise;
-  function getSSISDK() {
-    if (sdkPromise) {
-      return sdkPromise;
-    } else {
-      sdkPromise = loadWebAssembly().then(function (makeDidFunc) {
-        return makeDidFunc;
-      });
-      return sdkPromise;
-    }
+  function _loadWasm() {
+    _loadWasm = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+      var wasmFile, go, wasmModule, wasmInstance, makeDid;
+      return _regeneratorRuntime().wrap(function _callee$(_context) {
+        while (1) switch (_context.prev = _context.next) {
+          case 0:
+            _context.next = 2;
+            return readFile(wasmFilePath);
+          case 2:
+            wasmFile = _context.sent;
+            // Instantiate the Go object
+            go = new Go(); // Compile and instantiate the WASM module with the Go import object
+            _context.next = 6;
+            return WebAssembly.compile(wasmFile);
+          case 6:
+            wasmModule = _context.sent;
+            _context.next = 9;
+            return WebAssembly.instantiate(wasmModule, go.importObject);
+          case 9:
+            wasmInstance = _context.sent;
+            // Run the Go instance
+            go.run(wasmInstance);
+
+            // Access the JavaScript function created in the Go code
+            makeDid = commonjsGlobal.makeDid;
+            return _context.abrupt("return", {
+              makeDid: makeDid
+            });
+          case 13:
+          case "end":
+            return _context.stop();
+        }
+      }, _callee);
+    }));
+    return _loadWasm.apply(this, arguments);
   }
-  var src = getSSISDK;
+  var src = loadWasm;
 
   return src;
 
