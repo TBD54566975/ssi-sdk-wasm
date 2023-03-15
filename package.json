@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/TBD54566975/ssi-sdk-wasm#readme",
   "devDependencies": {
+    "esbuild": "0.17.11",
     "@babel/core": "^7.21.0",
     "@babel/preset-env": "^7.20.2",
     "@types/node": "^18.14.1",
