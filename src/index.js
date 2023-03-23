@@ -1,41 +1,24 @@
 const fs = require('fs');
-const path = require('path');
-const util = require('util');
+const { promisify } = require('util');
+const readFile = promisify(fs.readFile);
+
 
 global.crypto ??= require("crypto");
+const wasmExec = require('./wasm_exec');
+const wasmFile = './main.wasm';
 
-// Include the wasm_exec.js file
-require('./wasm_exec');
+async function init() {
+  const go = new Go(); // Defined in wasm_exec.js
+  const wasm = await readFile(wasmFile);
+  const result = await WebAssembly.instantiate(wasm, go.importObject);
 
-const wasmFilePath = path.join(__dirname, 'main.wasm');
-const readFile = util.promisify(fs.readFile);
-
-async function loadWasm() {
-  const wasmFile = await readFile(wasmFilePath);
-
-  // Instantiate the Go object
-  const go = new Go();
-
-  // Compile and instantiate the WASM module with the Go import object
-  const wasmModule = await WebAssembly.compile(wasmFile);
-  const wasmInstance = await WebAssembly.instantiate(wasmModule, go.importObject);
-
-  // Run the Go instance
-  go.run(wasmInstance);
-
-  // Access the JavaScript function created in the Go code
-  const makeDid = global.makeDid;
+  go.run(result.instance);
 
   return {
-    makeDid
+    makeDid: global.makeDid,
   };
 }
 
-module.exports = loadWasm;
-
-// For Testing
-// (async () => {
-//     const wasmExports = await loadWasm();
-//     const result = wasmExports.makeDid();
-//     console.log('Result from WASM function:', result);
-//   })();
+module.exports = {
+  init,
+};

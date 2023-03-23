@@ -1,41 +1,20 @@
 {
-  "name": "ssi-sdk-wasm",
-  "version": "1.0.12",
-  "description": "All things self sovereign identity",
-  "main": "dist/ssi-sdk-wasm.cjs.js",
-  "module": "dist/ssi-sdk-wasm.esm.js",
-  "browser": "dist/ssi-sdk-wasm.umd.js",
+  "name": "mywasmlib",
+  "version": "1.0.0",
+  "main": "dist/node.js",
+  "module": "dist/browser.js",
+  "browser": "dist/browser.js",
   "scripts": {
-    "build": "rollup -c",
-    "test": "node test/spec",
-    "pretest": "npm run build"
+    "build": "node build.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/TBD54566975/ssi-sdk-wasm.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/TBD54566975/ssi-sdk-wasm/issues"
-  },
-  "homepage": "https://github.com/TBD54566975/ssi-sdk-wasm#readme",
   "devDependencies": {
-    "@babel/core": "^7.21.0",
-    "@babel/preset-env": "^7.20.2",
-    "@types/node": "^18.14.1",
-    "rollup": "^2.79.1",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "webassembly-loader": "^1.1.0"
+    "esbuild": "^0.17.12"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
   "dependencies": {
-    "atob": "^2.1.2",
-    "xhr2": "^0.2.1"
+    "browserfs": "^1.4.3",
+    "fs": "^0.0.1-security",
+    "node-fetch": "^3.3.1",
+    "path": "^0.12.7",
+    "util": "^0.12.5"
   }
 }
