@@ -1,21 +1,68 @@
-[![godoc ssi-sdk](https://img.shields.io/badge/godoc-ssi--sdk-blue)](https://pkg.go.dev/github.com/TBD54566975/ssi-sdk)
-[![go version 1.19.2](https://img.shields.io/badge/go_version-1.19.2-brightgreen)](https://golang.org/)
-[![Go Report Card A+](https://goreportcard.com/badge/github.com/TBD54566975/ssi-sdk)](https://goreportcard.com/report/github.com/TBD54566975/ssi-sdk)
-[![license Apache 2](https://img.shields.io/badge/license-Apache%202-black)](https://github.com/TBD54566975/ssi-sdk/blob/main/LICENSE)
-[![issues](https://img.shields.io/github/issues/TBD54566975/ssi-sdk)](https://github.com/TBD54566975/ssi-sdk/issues)
-![ssi-sdk-ci status](https://github.com/TBD54566975/ssi-sdk/workflows/ssi-sdk-ci/badge.svg?branch=main&event=push)
-[![codecov](https://codecov.io/gh/TBD54566975/ssi-sdk/branch/main/graph/badge.svg?token=8SD0TO9Z9E)](https://codecov.io/gh/TBD54566975/ssi-sdk)
-
 # ssi-sdk-wasm
 
-# WASM bindings of ssi-sdk into javascript
+[![npm version](https://badge.fury.io/js/ssi-sdk-wasm.svg)](https://www.npmjs.com/package/ssi-sdk-wasm)
 
-The home of self soverign stuff at TBD, implented in golang. 
-We want to use this from the web as well, this minimal demo shows how. WASM code generated from here: https://github.com/TBD54566975/ssi-sdk
+`ssi-sdk-wasm` is a library that provides a WebAssembly (WASM) implementation for Self-Sovereign Identity (SSI) SDK. It enables SSI functionality in the browser and other JavaScript environments by compiling the SDK to a WASM file. This repository is responsible for building the `main.wasm` file and making it available as an npm package.
 
-`webserver` is a sample webserver which serves up a sample js app from `static` which also contains the wasm bindings and wasm "binary".
+## Table of Contents
 
-# Introduction
+- [Usage](#usage)
+- [Build](#build)
+- [Test](#test)
+- [Example](#example)
+- [Concepts](#concepts)
+- [Contributing](#contributing)
+- [Specifications](#specifications)
+- [Resources](#resources)
+
+
+
+## Usage
+
+To use the ssi-sdk-wasm package, simply import it in your project (Note this only works in nodejs currently, to use in react you can follow the example in the example directory):
+
+```bash
+import SSI from 'ssi-sdk-wasm';
+```
+
+## Build
+
+To install the `ssi-sdk-wasm` package, run:
+
+```bash
+npm install
+npm run build
+```
+
+This will produce create the wasm file from the generation code in the wasm directory the following output files:
+
+* dist/index.js: Bundled JavaScript file
+* dist/main.wasm: Compiled WASM file
+
+The build script also copies the main.wasm file to the examples/react/public/ directory.
+
+## Test
+
+This contains a simple test to make sure all wasm functions are working properly
+
+```bash
+npm run test
+```
+
+
+## Example
+There are examples in the example directory. This code snippet will create a did in your nodejs application
+```javascript
+import SSI from 'ssi-sdk-wasm'
+
+async function run() {
+    console.log(await SSI.makeDid());
+}
+
+run();
+```
+
+## Concepts
 Named `ssi-sdk`, this SDK encapsulates a set of standards related
 to [Self Sovereign Identity](http://www.lifewithalacrity.com/2016/04/the-path-to-self-soverereign-identity.html).
 The `ssi-sdk` intends to provide flexible functionality based on a set of standards-based primitives for building
@@ -31,14 +78,14 @@ The SDK has not undergone any formal security review or audit, so please use wit
 
 For more information, see the [vision document](doc/VISION.md).
 
-# Contributing
+## Contributing
 
 This project is fully open source, and we welcome contributions! For more information please see
 [CONTRIBUTING](https://github.com/TBD54566975/ssi-sdk/blob/main/CONTRIBUTING.md). Our current thinking about the
 development of the library is captured in
 [GitHub Issues](https://github.com/TBD54566975/ssi-sdk/issues).
 
-# Specifications
+## Specifications
 
 Here are a set of references to specifications that this library currently supports. It is a dynamic set that will
 change as the library evolves.
@@ -56,7 +103,7 @@ change as the library evolves.
 - [Credential Manifest](https://identity.foundation/credential-manifest/) _Strawman, June 2022_
 - [Status List 2021](https://w3c-ccg.github.io/vc-status-list-2021/) _Draft Community Group Report 04 April 2022_
 
-## signature suites
+### signature suites
 
 - [Data Integrity 1.0](https://w3c-ccg.github.io/data-integrity-spec) _Draft Community Group Report_
 - [Linked Data Cryptographic Suite Registry](https://w3c-ccg.github.io/ld-cryptosuite-registry/) _Draft Community Group
@@ -68,24 +115,15 @@ change as the library evolves.
       Suite [can be found here](https://identity.foundation/JWS-Test-Suite/#tbd).
     - Supports both JWT and Linked Data proof formats with [JOSE compliance](https://jose.readthedocs.io/en/latest/).
 
-## did methods
+### did methods
 
 - [The did:key Method v0.7](https://w3c-ccg.github.io/did-method-key/) _Unofficial Draft 14 February 2022_
 - [The did:web Method](https://w3c-ccg.github.io/did-method-web/) _20 December 2021_
 - [The did:peer Method](https://identity.foundation/peer-did-method-spec/) _W3C Document 12 October 2021_
 - [The did:pkh Method](https://github.com/w3c-ccg/did-pkh/blob/main/did-pkh-method-draft.md) _Draft, 22 August 2022_
 
-# Building
-This is our WASM code compiled from https://github.com/TBD54566975/ssi-sdk
 
-# Versioning
-
-For information on versioning refer to our [versioning guide](doc/VERSIONING.md).
-
-The latest version is...nothing! No releases have been made.
-
-
-# Project Resources
+## Resources
 
 | Resource                                                                               | Description                                                                   |
 |----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
