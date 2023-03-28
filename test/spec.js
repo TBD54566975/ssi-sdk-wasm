@@ -1,9 +1,22 @@
 const assert = require('assert');
-const SSI = require('..');
+const SSI = require('../dist/index.js');
 
+// Make a DID
 (async () => {
   const did = await SSI.makeDid();
-
   assert.equal(did.id.includes("did"), true)
-  console.log('Result from WASM function:', did);
+})();
+
+// Generate a key
+(async () => {
+  const key = await SSI.generateKey("Ed25519");
+  assert.notEqual(key, null);
+})();
+
+// Parse a jwt credential
+(async () => {
+  const jwtCred = "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa2p4V252QnROQVFmSEZ3QVNLSHZvclhSWUdRdU5EWWlTc2p2NjFqNG5YZVZpIiwidHlwIjoiSldUIn0.eyJleHAiOjI1ODAxMzAwODAsImlzcyI6ImRpZDprZXk6ejZNa2p4V252QnROQVFmSEZ3QVNLSHZvclhSWUdRdU5EWWlTc2p2NjFqNG5YZVZpIiwianRpIjoiZTcyYWZjZDAtMzJkZS00YTgzLThmNzktNDUyOTM0ZTVhZmJiIiwibmJmIjoxNjY2MzY1OTUxLCJzdWIiOiJkaWQ6a2V5Ono2TWtqeFdudkJ0TkFRZkhGd0FTS0h2b3JYUllHUXVORFlpU3NqdjYxajRuWGVWaSIsInZjIjp7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL3YxIl0sImlkIjoiZTcyYWZjZDAtMzJkZS00YTgzLThmNzktNDUyOTM0ZTVhZmJiIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOiJkaWQ6a2V5Ono2TWtqeFdudkJ0TkFRZkhGd0FTS0h2b3JYUllHUXVORFlpU3NqdjYxajRuWGVWaSIsImlzc3VhbmNlRGF0ZSI6IjIwMjItMTAtMjFUMTU6MjU6NTFaIiwiZXhwaXJhdGlvbkRhdGUiOiIyMDUxLTEwLTA1VDE0OjQ4OjAwLjAwMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJhZGRpdGlvbmFsTmFtZSI6ImhhbmsgaGlsbCIsImJpcnRoRGF0ZSI6IjIwMDktMDEtMDMiLCJmYW1pbHlOYW1lIjoic2ltcHNvbiIsImdpdmVuTmFtZSI6InJpY2t5IGJvYmJ5IiwiaWQiOiJkaWQ6a2V5Ono2TWtqeFdudkJ0TkFRZkhGd0FTS0h2b3JYUllHUXVORFlpU3NqdjYxajRuWGVWaSIsInBvc3RhbEFkZHJlc3MiOnsiYWRkcmVzc0NvdW50cnkiOiJVLlMuQSIsImFkZHJlc3NMb2NhbGl0eSI6IkF1c3RpbiIsImFkZHJlc3NSZWdpb24iOiJUWCIsInBvc3RhbENvZGUiOiI3ODcyNCIsInN0cmVldEFkZHJlc3MiOiIxMjMgSmFua3RvcGlhIEF2ZS4ifSwidGF4SUQiOiIxMjMifSwiY3JlZGVudGlhbFNjaGVtYSI6eyJpZCI6IjQ3M2NlMjg1LWNkNTEtNGYwNy04MzE0LTliYzdhZjBhNzEyZiIsInR5cGUiOiJKc29uU2NoZW1hVmFsaWRhdG9yMjAxOCJ9fX0.KJv_RabWfyFdIOcfHgEbGH7mbLb1seqK_k9oNHHKYv0rPtHwOUSCcC6UvWg0_8BYnZLo7Tjz9KcgZCzWu-nXBg"
+  const cred = await SSI.parseJWTCredential(jwtCred);
+  assert.notEqual(cred, null);
+  assert.equal(cred.type[0], "VerifiableCredential");
 })();

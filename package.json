@@ -6,7 +6,8 @@
     "module": "dist/browser.js",
     "browser": "dist/browser.js",
     "scripts": {
-        "build": "esbuild index.js --bundle --format=cjs --platform=node --outfile=dist/index.js",
+        "build": "esbuild index.js --bundle --format=cjs --platform=node --outfile=dist/index.js && npm run build:wasm && cp dist/main.wasm examples/react/public/",
+        "build:wasm": "cd wasm && GOOS=js GOARCH=wasm go build -o ../dist/main.wasm && cd .. && echo \"\\033[0;32mcompiled wasm successfully!\\033[0m\"",
         "test": "node test/spec"
     },
     "devDependencies": {

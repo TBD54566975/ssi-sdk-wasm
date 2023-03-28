@@ -3629,14 +3629,20 @@ async function initWasm() {
   const wasmInstance = await WebAssembly.instantiate(wasmModule, go.importObject);
   go.run(wasmInstance);
   wasmExports = {
+    simpleAdd: global.simpleAdd,
+    generateKey: global.generateKey,
     makeDid: global.makeDid,
     resolveDID: global.resolveDID,
-    simpleAdd: global.simpleAdd
+    parseJWTCredential: global.parseJWTCredential
   };
 }
 async function simpleAdd(a, b) {
   await isWasmInitialized;
   return wasmExports.simpleAdd(a, b);
+}
+async function generateKey(keyType) {
+  await isWasmInitialized;
+  return wasmExports.generateKey(keyType);
 }
 async function makeDid() {
   await isWasmInitialized;
@@ -3646,8 +3652,14 @@ async function resolveDID(didString) {
   await isWasmInitialized;
   return wasmExports.resolveDID(didString);
 }
+async function parseJWTCredential(credJWT) {
+  await isWasmInitialized;
+  return wasmExports.parseJWTCredential(credJWT);
+}
 module.exports = {
+  simpleAdd,
+  generateKey,
   makeDid,
   resolveDID,
-  simpleAdd
+  parseJWTCredential
 };
