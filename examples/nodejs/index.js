@@ -2,8 +2,10 @@
 import SSI from '../../dist/index.js';
 
 async function run() {
-    console.log(await SSI.makeDid());
-    console.log(await SSI.simpleAdd(1,3));
+    const did = await SSI.createDIDKey();
+    const vc = await SSI.createVerifiableCredential(did.didDocument.id, did.privateKeyBase58, JSON.stringify({ id: did.didDocument.id, name: 'John Doe' }));
+    console.log("Created VC:")
+    console.log(vc)
 }
 
 run();

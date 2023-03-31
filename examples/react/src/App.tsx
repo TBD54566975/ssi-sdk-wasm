@@ -19,7 +19,7 @@ function App() {
           Learn React
         </a>
         <button onClick={() => {
-          alert(`Result from WebAssembly: ${JSON.stringify(window.makeDid())}`);
+          alert(`Result from WebAssembly: ${JSON.stringify(window.createDIDKey())}`);
         }}>
           Click here to invoke WebAssembly
         </button>
