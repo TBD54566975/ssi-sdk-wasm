@@ -3629,37 +3629,32 @@ async function initWasm() {
   const wasmInstance = await WebAssembly.instantiate(wasmModule, go.importObject);
   go.run(wasmInstance);
   wasmExports = {
-    simpleAdd: global.simpleAdd,
     generateKey: global.generateKey,
-    makeDid: global.makeDid,
+    createDIDKey: global.createDIDKey,
     resolveDID: global.resolveDID,
-    parseJWTCredential: global.parseJWTCredential
+    parseJWTCredential: global.parseJWTCredential,
+    createVerifiableCredential: global.createVerifiableCredential
   };
 }
-async function simpleAdd(a, b) {
+async function createDIDKey() {
   await isWasmInitialized;
-  return wasmExports.simpleAdd(a, b);
-}
-async function generateKey(keyType) {
-  await isWasmInitialized;
-  return wasmExports.generateKey(keyType);
-}
-async function makeDid() {
-  await isWasmInitialized;
-  return wasmExports.makeDid();
+  return wasmExports.createDIDKey();
 }
 async function resolveDID(didString) {
   await isWasmInitialized;
   return wasmExports.resolveDID(didString);
+}
+async function createVerifiableCredential(issuerDID, issuerDIDPrivateKey, subjectJSONString) {
+  await isWasmInitialized;
+  return wasmExports.createVerifiableCredential(issuerDID, issuerDIDPrivateKey, subjectJSONString);
 }
 async function parseJWTCredential(credJWT) {
   await isWasmInitialized;
   return wasmExports.parseJWTCredential(credJWT);
 }
 module.exports = {
-  simpleAdd,
-  generateKey,
-  makeDid,
+  createDIDKey,
   resolveDID,
-  parseJWTCredential
+  parseJWTCredential,
+  createVerifiableCredential
 };
