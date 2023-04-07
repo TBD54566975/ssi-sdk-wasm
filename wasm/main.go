@@ -26,6 +26,7 @@ import (
 // @Summary     Create DID:Key pair
 // @Description Generate a DID key pair (using Ed25519) and return a JavaScript object containing the DID document and the private key in Base58 format
 // @Success     js.Object "{ didDocument: <object>, privateKeyBase58: <string> }"
+// @Error js.Value "An error object with a message describing the error"
 func createDIDKey() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		pubKey, privKey, err := crypto.GenerateKeyByKeyType(crypto.Ed25519)
@@ -67,6 +68,7 @@ func createDIDKey() js.Func {
 // @Description Resolve a given DID using a set of resolvers (KeyResolver, WebResolver, PKHResolver, and PeerResolver), and return the corresponding DID document as a JavaScript object
 // @Param didString string "The DID string to be resolved"
 // @Success js.Object "{ <DID document fields> }"
+// @Error js.Value "An error object with a message describing the error"
 func resolveDID() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 1 {
@@ -108,11 +110,13 @@ func resolveDID() js.Func {
 // @Param issuerDIDPrivateKey string "The issuer's DID private key in Base58 format"
 // @Param subjectJSON string "The subject JSON string containing the subject data"
 // @Success js.Object "{ <Verifiable Credential fields> }"
+// @Error js.Value "An error object with a message describing the error"
 func createVerifiableCredential() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 3 {
 			return generateError(errors.New("invalid arg count, usage: createVerifiableCredential(didString,didBase58PrivateKey,subjectJSONString)"))
 		}
+		keyType := crypto.Ed25519
 
 		issuerDID := args[0].String()
 		issuerDIDPrivateKey := args[1].String()
@@ -144,7 +148,7 @@ func createVerifiableCredential() js.Func {
 		}
 
 		// TODO: add keyType as dynamic arg
-		privKeyFromBytes, err := crypto.BytesToPrivKey(privateKeyBytes, crypto.Ed25519)
+		privKeyFromBytes, err := crypto.BytesToPrivKey(privateKeyBytes, keyType)
 		if err != nil {
 			return generateError(err)
 		}
@@ -166,7 +170,11 @@ func createVerifiableCredential() js.Func {
 			return generateError(err)
 		}
 
-		return js.ValueOf(resultObj)
+		jsDIDObj := js.Global().Get("Object").New()
+		jsDIDObj.Set("vc", js.ValueOf(resultObj))
+		jsDIDObj.Set("vcJWT", js.ValueOf(string(signedVCBytes)))
+
+		return js.ValueOf(jsDIDObj)
 	})
 }
 
@@ -176,6 +184,7 @@ func createVerifiableCredential() js.Func {
 // @Description Parse a JWT Verifiable Credential from the provided JWT string, and return the corresponding credential as a JavaScript object
 // @Param jwtCredential string "The JWT string representing the Verifiable Credential"
 // @Success js.Object "{ <Verifiable Credential fields> }"
+// @Error js.Value "An error object with a message describing the error"
 func parseJWTCredential() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 1 {
@@ -196,7 +205,62 @@ func parseJWTCredential() js.Func {
 		json.Unmarshal(credBytes, &resultObj)
 
 		return js.ValueOf(resultObj)
+	})
+}
 
+// verifyJWTCredential
+//
+// @Summary Verify JWT Verifiable Credential
+// @Description Verify a JWT Verifiable Credential by checking its signature and issuer against the provided DID
+// @Param jwtCredential string "The JWT string representing the Verifiable Credential"
+// @Param didKey string "DID string to be used for verification"
+// @Success js.Value "true" "If the JWT Verifiable Credential is successfully verified"
+// @Error js.Value "An error object with a message describing the error"
+func verifyJWTCredential() js.Func {
+	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		if len(args) != 2 {
+			return generateError(errors.New("invalid arg count, need jwt credential string as argument"))
+		}
+		keyType := crypto.Ed25519
+
+		vcJWT := args[0].String()
+		didKey := args[1].String()
+		verifierKid := ""
+
+		didDoc, err := did.DIDKey(didKey).Expand()
+		if err != nil {
+			return generateError(err)
+		}
+
+		publicKeyBytes, err := base58.Decode(didDoc.VerificationMethod[0].PublicKeyBase58)
+		if err != nil {
+			return generateError(err)
+		}
+
+		cryptoPubKey, err := crypto.BytesToPubKey(publicKeyBytes, keyType)
+		if err != nil {
+			return generateError(err)
+		}
+
+		cred, err := signing.ParseVerifiableCredentialFromJWT(vcJWT)
+		if err != nil {
+			return generateError(err)
+		}
+
+		// TODO: Get kid from vcJWT?
+		verifierKid = cred.Issuer.(string)
+
+		jwtVerifier, err := crypto.NewJWTVerifier(verifierKid, cryptoPubKey)
+		if err != nil {
+			return generateError(err)
+		}
+
+		_, err = signing.VerifyVerifiableCredentialJWT(*jwtVerifier, vcJWT)
+		if err != nil {
+			return generateError(err)
+		}
+
+		return js.ValueOf(true)
 	})
 }
 
@@ -231,5 +295,6 @@ func main() {
 	js.Global().Set("resolveDid", resolveDID())
 	js.Global().Set("parseJWTCredential", parseJWTCredential())
 	js.Global().Set("createVerifiableCredential", createVerifiableCredential())
+	js.Global().Set("verifyJWTCredential", verifyJWTCredential())
 	<-ch
 }

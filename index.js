@@ -24,6 +24,8 @@ async function initWasm() {
     resolveDID: global.resolveDID,
     parseJWTCredential: global.parseJWTCredential,
     createVerifiableCredential: global.createVerifiableCredential,
+    createInputDescriptor: global.createInputDescriptor,
+    verifyJWTCredential: global.verifyJWTCredential,
   };
 }
 
@@ -47,9 +49,24 @@ async function parseJWTCredential(credJWT) {
   return wasmExports.parseJWTCredential(credJWT);
 }
 
+async function verifyJWTCredential(credJWT, publicKeyBase58) {
+  await isWasmInitialized;
+  return wasmExports.verifyJWTCredential(credJWT, publicKeyBase58)
+}
+
+async function createInputDescriptor(purpose, constraintsFieldPath, constraintsFieldID) {
+  await isWasmInitialized;
+  return wasmExports.createInputDescriptor(purpose, constraintsFieldPath, constraintsFieldID)
+}
+
+
+
 module.exports = {
   createDIDKey,
   resolveDID,
   parseJWTCredential,
   createVerifiableCredential,
+  verifyJWTCredential,
+  createInputDescriptor,
+  
 };

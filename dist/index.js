@@ -3629,11 +3629,12 @@ async function initWasm() {
   const wasmInstance = await WebAssembly.instantiate(wasmModule, go.importObject);
   go.run(wasmInstance);
   wasmExports = {
-    generateKey: global.generateKey,
     createDIDKey: global.createDIDKey,
     resolveDID: global.resolveDID,
     parseJWTCredential: global.parseJWTCredential,
-    createVerifiableCredential: global.createVerifiableCredential
+    createVerifiableCredential: global.createVerifiableCredential,
+    createInputDescriptor: global.createInputDescriptor,
+    verifyJWTCredential: global.verifyJWTCredential
   };
 }
 async function createDIDKey() {
@@ -3652,9 +3653,19 @@ async function parseJWTCredential(credJWT) {
   await isWasmInitialized;
   return wasmExports.parseJWTCredential(credJWT);
 }
+async function verifyJWTCredential(credJWT, publicKeyBase58) {
+  await isWasmInitialized;
+  return wasmExports.verifyJWTCredential(credJWT, publicKeyBase58);
+}
+async function createInputDescriptor(purpose, constraintsFieldPath, constraintsFieldID) {
+  await isWasmInitialized;
+  return wasmExports.createInputDescriptor(purpose, constraintsFieldPath, constraintsFieldID);
+}
 module.exports = {
   createDIDKey,
   resolveDID,
   parseJWTCredential,
-  createVerifiableCredential
+  createVerifiableCredential,
+  verifyJWTCredential,
+  createInputDescriptor
 };
