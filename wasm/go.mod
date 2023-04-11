@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/TBD54566975/ssi-sdk v0.0.3-alpha
-	github.com/goccy/go-json v0.10.0
+	github.com/goccy/go-json v0.10.2
 	github.com/libp2p/go-libp2p-core v0.20.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/pkg/errors v0.9.1
@@ -33,6 +33,7 @@ require (
 	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/libp2p/go-libp2p v0.22.0 // indirect
 	github.com/libp2p/go-openssl v0.1.0 // indirect
+	github.com/magefile/mage v1.14.0 // indirect
 	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
@@ -48,7 +49,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/term v0.7.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 )

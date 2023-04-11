@@ -26,6 +26,10 @@ async function initWasm() {
     createVerifiableCredential: global.createVerifiableCredential,
     createInputDescriptor: global.createInputDescriptor,
     verifyJWTCredential: global.verifyJWTCredential,
+    createPresentationDefinition: global.createPresentationDefinition,
+    createPresentationRequest: global.createPresentationRequest,
+    createPresentationSubmission: global.createPresentationSubmission,
+    verifyPresentationSubmission: global.verifyPresentationSubmission,
   };
 }
 
@@ -59,7 +63,26 @@ async function createInputDescriptor(purpose, constraintsFieldPath, constraintsF
   return wasmExports.createInputDescriptor(purpose, constraintsFieldPath, constraintsFieldID)
 }
 
+async function createPresentationDefinition(presentationDefinitionInput) {
+  await isWasmInitialized;
+  return wasmExports.createPresentationDefinition(presentationDefinitionInput)
+}
 
+async function createPresentationRequest(presentationDefinitionInput, signerDID, signerPrivateKey, holderDID) {
+  await isWasmInitialized;
+  return wasmExports.createPresentationRequest(presentationDefinitionInput, signerDID, signerPrivateKey, holderDID)
+}
+
+
+async function createPresentationSubmission(presentationDefinitionInput, signerDID, signerPrivateKey, vcJWT) {
+  await isWasmInitialized;
+  return wasmExports.createPresentationSubmission(presentationDefinitionInput, signerDID, signerPrivateKey, vcJWT)
+}
+
+async function verifyPresentationSubmission(presentationDefinitionInput, verifierDID, verifierPrivateKey, presentationSubmissionJWT) {
+  await isWasmInitialized;
+  return wasmExports.verifyPresentationSubmission(presentationDefinitionInput, verifierDID, verifierPrivateKey, presentationSubmissionJWT)
+}
 
 module.exports = {
   createDIDKey,
@@ -68,5 +91,8 @@ module.exports = {
   createVerifiableCredential,
   verifyJWTCredential,
   createInputDescriptor,
-  
+  createPresentationDefinition,
+  createPresentationRequest,
+  createPresentationSubmission,
+  verifyPresentationSubmission,
 };
