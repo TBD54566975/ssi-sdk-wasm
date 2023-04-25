@@ -24,6 +24,12 @@ async function initWasm() {
     resolveDID: global.resolveDID,
     parseJWTCredential: global.parseJWTCredential,
     createVerifiableCredential: global.createVerifiableCredential,
+    createInputDescriptor: global.createInputDescriptor,
+    verifyJWTCredential: global.verifyJWTCredential,
+    createPresentationDefinition: global.createPresentationDefinition,
+    createPresentationRequest: global.createPresentationRequest,
+    createPresentationSubmission: global.createPresentationSubmission,
+    verifyPresentationSubmission: global.verifyPresentationSubmission,
   };
 }
 
@@ -47,9 +53,46 @@ async function parseJWTCredential(credJWT) {
   return wasmExports.parseJWTCredential(credJWT);
 }
 
+async function verifyJWTCredential(credJWT, publicKeyBase58) {
+  await isWasmInitialized;
+  return wasmExports.verifyJWTCredential(credJWT, publicKeyBase58)
+}
+
+async function createInputDescriptor(purpose, constraintsFieldPath, constraintsFieldID) {
+  await isWasmInitialized;
+  return wasmExports.createInputDescriptor(purpose, constraintsFieldPath, constraintsFieldID)
+}
+
+async function createPresentationDefinition(presentationDefinitionInput) {
+  await isWasmInitialized;
+  return wasmExports.createPresentationDefinition(presentationDefinitionInput)
+}
+
+async function createPresentationRequest(presentationDefinitionInput, signerDID, signerPrivateKey, holderDID) {
+  await isWasmInitialized;
+  return wasmExports.createPresentationRequest(presentationDefinitionInput, signerDID, signerPrivateKey, holderDID)
+}
+
+
+async function createPresentationSubmission(presentationDefinitionInput, signerDID, signerPrivateKey, vcJWT) {
+  await isWasmInitialized;
+  return wasmExports.createPresentationSubmission(presentationDefinitionInput, signerDID, signerPrivateKey, vcJWT)
+}
+
+async function verifyPresentationSubmission(presentationDefinitionInput, verifierDID, verifierPrivateKey, presentationSubmissionJWT) {
+  await isWasmInitialized;
+  return wasmExports.verifyPresentationSubmission(presentationDefinitionInput, verifierDID, verifierPrivateKey, presentationSubmissionJWT)
+}
+
 module.exports = {
   createDIDKey,
   resolveDID,
   parseJWTCredential,
   createVerifiableCredential,
+  verifyJWTCredential,
+  createInputDescriptor,
+  createPresentationDefinition,
+  createPresentationRequest,
+  createPresentationSubmission,
+  verifyPresentationSubmission,
 };

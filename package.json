@@ -1,6 +1,6 @@
 {
     "name": "ssi-sdk-wasm",
-    "version": "1.0.17",
+    "version": "1.0.19",
     "description": "All things self sovereign identity",
     "main": "dist/node.js",
     "module": "dist/browser.js",
