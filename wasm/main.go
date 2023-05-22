@@ -3,8 +3,11 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"strings"
 	"syscall/js"
-
 	"time"
 
 	"crypto/ed25519"
@@ -12,19 +15,24 @@ import (
 	"github.com/TBD54566975/ssi-sdk/credential"
 	"github.com/TBD54566975/ssi-sdk/credential/exchange"
 	"github.com/TBD54566975/ssi-sdk/crypto"
-
-	"github.com/TBD54566975/ssi-sdk/credential/signing"
-	"github.com/TBD54566975/ssi-sdk/did"
+	"github.com/TBD54566975/ssi-sdk/crypto/jwx"
+	"github.com/TBD54566975/ssi-sdk/did/ion"
+	"github.com/TBD54566975/ssi-sdk/did/key"
+	"github.com/TBD54566975/ssi-sdk/did/peer"
+	"github.com/TBD54566975/ssi-sdk/did/pkh"
+	"github.com/TBD54566975/ssi-sdk/did/resolution"
+	"github.com/TBD54566975/ssi-sdk/did/web"
 	"github.com/goccy/go-json"
-	"github.com/mr-tron/base58/base58"
+	"github.com/google/uuid"
+	"github.com/mr-tron/base58"
 	"github.com/pkg/errors"
 )
 
 // createDIDKey
 //
 // @Summary     Create DID:Key pair
-// @Description Generate a DID key pair (using Ed25519) and return a JavaScript object containing the DID document and the private key in Base58 format
-// @Success     js.Object "{ didDocument: <object>, privateKeyBase58: <string> }"
+// @Description Generate a DID key pair (using Ed25519) and return a JavaScript object containing the DID document and the private JWK
+// @Success     js.Object "{ didDocument: <object>, privKeyJWK: <string> }"
 // @Error js.Value "An error object with a message describing the error"
 func createDIDKey() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -32,32 +40,93 @@ func createDIDKey() js.Func {
 		if err != nil {
 			return generateError(err)
 		}
-		didKey, err := did.CreateDIDKey(crypto.Ed25519, pubKey.(ed25519.PublicKey))
+
+		didKey, err := key.CreateDIDKey(crypto.Ed25519, pubKey.(ed25519.PublicKey))
 		if err != nil {
 			return generateError(err)
 		}
+
 		result, err := didKey.Expand()
 		if err != nil {
 			return generateError(err)
 		}
 
-		privKeyBytes, err := crypto.PrivKeyToBytes(privKey)
+		_, privKeyJWK, err := jwx.PrivateKeyToPrivateKeyJWK(uuid.NewString(), privKey)
 		if err != nil {
 			return generateError(err)
 		}
-		base58PrivKey := base58.Encode(privKeyBytes)
+
+		privKeyJWKBytes, err := json.Marshal(privKeyJWK)
+		if err != nil {
+			return generateError(err)
+		}
+
+		privKeyJWKString := string(privKeyJWKBytes)
 
 		resultObj, err := simplifyForJS(result)
 		if err != nil {
 			return generateError(err)
 		}
 
-		// Create a JavaScript object and set its properties using the values from the Go struct
 		jsDIDObj := js.Global().Get("Object").New()
 		jsDIDObj.Set("didDocument", js.ValueOf(resultObj))
-		jsDIDObj.Set("privateKeyBase58", js.ValueOf(string(base58PrivKey)))
+		jsDIDObj.Set("privKeyJWK", js.ValueOf(privKeyJWKString))
 
 		return jsDIDObj
+	})
+}
+
+// createDIDIon
+//
+// @Summary     Create DID:Ion pair
+// @Description Generate a DID Ion pair (using Ed25519) for ION protocol and return a JavaScript object containing the ION document and the private JWK
+// @Success     js.Object "{ didDocument: <object>, privKeyJWK: <string> }"
+// @Error js.Value "An error object with a message describing the error"
+func createDIDIon() js.Func {
+	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		_, privKey, err := crypto.GenerateKeyByKeyType(crypto.Ed25519)
+		if err != nil {
+			return generateError(err)
+		}
+
+		pubKeyJWK, privKeyJWK, err := jwx.PrivateKeyToPrivateKeyJWK(uuid.NewString(), privKey)
+		if err != nil {
+			return generateError(err)
+		}
+
+		keyID := uuid.NewString()
+		pubKeys := []ion.PublicKey{
+			{
+				ID:           keyID,
+				Type:         crypto.Ed25519.String(),
+				PublicKeyJWK: *pubKeyJWK,
+				Purposes:     []ion.PublicKeyPurpose{ion.Authentication, ion.AssertionMethod},
+			},
+		}
+
+		doc := ion.Document{PublicKeys: pubKeys, Services: []ion.Service{}}
+
+		ionDID, _, err := ion.NewIONDID(doc)
+		if err != nil {
+			return generateError(err)
+		}
+
+		resultObj := make(map[string]interface{})
+		resultObj["id"] = ionDID.ID()
+		resultObj["recoveryPrivateJWK"] = fmt.Sprintf("%v", ionDID.GetRecoveryPrivateKey())
+		resultObj["longForm"] = ionDID.LongForm()
+
+		privKeyJWKBytes, err := json.Marshal(privKeyJWK)
+		if err != nil {
+			return generateError(err)
+		}
+		privKeyJWKString := string(privKeyJWKBytes)
+
+		jsDIDObj := js.Global().Get("Object").New()
+		jsDIDObj.Set("didDocument", js.ValueOf(resultObj))
+		jsDIDObj.Set("privKeyJWK", js.ValueOf(privKeyJWKString))
+
+		return js.ValueOf(jsDIDObj)
 	})
 }
 
@@ -75,15 +144,26 @@ func resolveDID() js.Func {
 		}
 
 		didString := args[0].String()
-		resolvers := []did.Resolution{did.KeyResolver{}, did.WebResolver{}, did.PKHResolver{}, did.PeerResolver{}}
-		resolver, err := did.NewResolver(resolvers...)
-		if err != nil {
-			return generateError(err)
-		}
 
-		doc, err := resolver.Resolve(didString)
-		if err != nil {
-			return generateError(err)
+		var err error
+		var doc *resolution.ResolutionResult
+
+		if strings.Contains(didString, "ion:") {
+			ionResolver, err := ion.NewIONResolver(http.DefaultClient, "https://ion.tbddev.org/")
+			doc, err = ionResolver.Resolve(context.Background(), didString, nil)
+			if err != nil {
+				return generateError(err)
+			}
+		} else {
+			resolvers := []resolution.Resolver{key.Resolver{}, web.Resolver{}, pkh.Resolver{}, peer.Resolver{}}
+			resolver, err := resolution.NewResolver(resolvers...)
+			if err != nil {
+				return generateError(err)
+			}
+			doc, err = resolver.Resolve(nil, didString)
+			if err != nil {
+				return generateError(err)
+			}
 		}
 
 		resultBytes, err := json.Marshal(doc)
@@ -106,21 +186,28 @@ func resolveDID() js.Func {
 // @Summary Create a Verifiable Credential
 // @Description Create a Verifiable Credential using the provided issuer DID, the issuer DID private key, and subject JSON string, and return the signed Verifiable Credential as a JavaScript object
 // @Param issuerDID string "The issuer's DID string"
-// @Param issuerDIDPrivateKey string "The issuer's DID private key in Base58 format"
+// @Param issuerDIDPrivKeyJWKString string "The issuer's private jwk"
 // @Param subjectJSON string "The subject JSON string containing the subject data"
-// @Success js.Object "{ <Verifiable Credential fields> }"
+// @Success js.Object "{ <Verifiable Credential>, <Verifiable Credential JWT> }"
 // @Error js.Value "An error object with a message describing the error"
 func createVerifiableCredential() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 3 {
 			return generateError(errors.New("invalid arg count, usage: createVerifiableCredential(didString,didBase58PrivateKey,subjectJSONString)"))
 		}
-		keyType := crypto.Ed25519
 
 		issuerDID := args[0].String()
-		issuerDIDPrivateKey := args[1].String()
+		issuerDIDPrivKeyJWKString := args[1].String()
 		subjectJSON := args[2].String()
 		issuanceDate := time.Now().Format(time.RFC3339)
+
+		var knownJWK jwx.PrivateKeyJWK
+		err := json.Unmarshal([]byte(issuerDIDPrivKeyJWKString), &knownJWK)
+		if err != nil {
+			return generateError(err)
+		}
+
+		signer, err := jwx.NewJWXSignerFromJWK(issuerDID, knownJWK)
 
 		subject := map[string]any{}
 		json.Unmarshal([]byte(subjectJSON), &subject)
@@ -141,28 +228,12 @@ func createVerifiableCredential() js.Func {
 			return generateError(err)
 		}
 
-		privateKeyBytes, err := base58.Decode(issuerDIDPrivateKey)
+		signedVCBytes, err := credential.SignVerifiableCredentialJWT(*signer, *vc)
 		if err != nil {
 			return generateError(err)
 		}
 
-		// TODO: add keyType as dynamic arg
-		privKeyFromBytes, err := crypto.BytesToPrivKey(privateKeyBytes, keyType)
-		if err != nil {
-			return generateError(err)
-		}
-
-		signer, err := crypto.NewJWTSigner(issuerDID, privKeyFromBytes)
-		if err != nil {
-			return generateError(err)
-		}
-
-		signedVCBytes, err := signing.SignVerifiableCredentialJWT(*signer, *vc)
-		if err != nil {
-			return generateError(err)
-		}
-
-		vcJSON, err := signing.ParseVerifiableCredentialFromJWT(string(signedVCBytes))
+		_, _, vcJSON, err := credential.ParseVerifiableCredentialFromJWT(string(signedVCBytes))
 
 		resultObj, err := simplifyForJS(vcJSON)
 		if err != nil {
@@ -190,7 +261,7 @@ func parseJWTCredential() js.Func {
 			return generateError(errors.New("invalid arg count, need jwt credential string as argument"))
 		}
 
-		cred, err := signing.ParseVerifiableCredentialFromJWT(args[0].String())
+		_, _, cred, err := credential.ParseVerifiableCredentialFromJWT(args[0].String())
 		if err != nil {
 			return generateError(err)
 		}
@@ -225,7 +296,7 @@ func verifyJWTCredential() js.Func {
 		vcJWT := args[0].String()
 		didKey := args[1].String()
 
-		didDoc, err := did.DIDKey(didKey).Expand()
+		didDoc, err := key.DIDKey(didKey).Expand()
 		if err != nil {
 			return generateError(err)
 		}
@@ -240,20 +311,19 @@ func verifyJWTCredential() js.Func {
 			return generateError(err)
 		}
 
-		cred, err := signing.ParseVerifiableCredentialFromJWT(vcJWT)
+		_, _, cred, err := credential.ParseVerifiableCredentialFromJWT(vcJWT)
 		if err != nil {
 			return generateError(err)
 		}
 
-		// TODO: Get kid from vcJWT?
 		verifierKid := cred.Issuer.(string)
 
-		jwtVerifier, err := crypto.NewJWTVerifier(verifierKid, cryptoPubKey)
+		jwtVerifier, err := jwx.NewJWXVerifier(verifierKid, verifierKid, cryptoPubKey)
 		if err != nil {
 			return generateError(err)
 		}
 
-		_, err = signing.VerifyVerifiableCredentialJWT(*jwtVerifier, vcJWT)
+		_, _, _, err = credential.VerifyVerifiableCredentialJWT(*jwtVerifier, vcJWT)
 		if err != nil {
 			return generateError(err)
 		}
@@ -310,11 +380,10 @@ func createPresentationRequest() js.Func {
 		if len(args) != 4 {
 			return generateError(errors.New("invalid arg count, usage: createPresentationRequest(presentationDefinitionInputString, signerDID, signerPrivateKeyBase58, holderDID)"))
 		}
-		keyType := crypto.Ed25519
 
 		presentationDefinitionInputString := args[0].String()
 		signerDID := args[1].String()
-		signerPrivateKeyBase58 := args[2].String()
+		issuerDIDPrivKeyJWKString := args[2].String()
 		holderDID := args[3].String()
 
 		var presentationDefinition exchange.PresentationDefinition
@@ -323,22 +392,18 @@ func createPresentationRequest() js.Func {
 			return generateError(err)
 		}
 
-		privateKeyBytes, err := base58.Decode(signerPrivateKeyBase58)
+		var knownJWK jwx.PrivateKeyJWK
+		err = json.Unmarshal([]byte(issuerDIDPrivKeyJWKString), &knownJWK)
 		if err != nil {
 			return generateError(err)
 		}
 
-		privKeyFromBytes, err := crypto.BytesToPrivKey(privateKeyBytes, keyType)
+		signer, err := jwx.NewJWXSignerFromJWK(signerDID, knownJWK)
 		if err != nil {
 			return generateError(err)
 		}
 
-		signer, err := crypto.NewJWTSigner(signerDID, privKeyFromBytes)
-		if err != nil {
-			return generateError(err)
-		}
-
-		presentationRequestBytes, err := exchange.BuildJWTPresentationRequest(*signer, presentationDefinition, holderDID)
+		presentationRequestBytes, err := exchange.BuildJWTPresentationRequest(*signer, presentationDefinition, []string{holderDID})
 		if err != nil {
 			return generateError(err)
 		}
@@ -365,11 +430,10 @@ func createPresentationSubmission() js.Func {
 		if len(args) != 4 {
 			return generateError(errors.New("invalid arg count, usage: createPresentationSubmission(presentationDefinitionInputString, signerDID, signerPrivateKeyBase58, vcJWT)"))
 		}
-		keyType := crypto.Ed25519
 
 		presentationDefinitionInputString := args[0].String()
 		signerDID := args[1].String()
-		signerPrivateKeyBase58 := args[2].String()
+		issuerDIDPrivKeyJWKString := args[2].String()
 		vcJWT := args[3].String()
 
 		var presentationDefinition exchange.PresentationDefinition
@@ -378,38 +442,24 @@ func createPresentationSubmission() js.Func {
 			return generateError(err)
 		}
 
-		privateKeyBytes, err := base58.Decode(signerPrivateKeyBase58)
+		var knownJWK jwx.PrivateKeyJWK
+		err = json.Unmarshal([]byte(issuerDIDPrivKeyJWKString), &knownJWK)
 		if err != nil {
 			return generateError(err)
 		}
 
-		privKeyFromBytes, err := crypto.BytesToPrivKey(privateKeyBytes, keyType)
-		if err != nil {
-			return generateError(err)
-		}
-
-		signer, err := crypto.NewJWTSigner(signerDID, privKeyFromBytes)
-		if err != nil {
-			return generateError(err)
-		}
-
-		vc, err := signing.ParseVerifiableCredentialFromJWT(string(vcJWT))
-		if err != nil {
-			return generateError(err)
-		}
-
-		vcJSONBytes, err := json.Marshal(vc)
+		signer, err := jwx.NewJWXSignerFromJWK(signerDID, knownJWK)
 		if err != nil {
 			return generateError(err)
 		}
 
 		presentationClaim := exchange.PresentationClaim{
-			TokenJSON:                     StringPtr(string(vcJSONBytes)),
+			Token:                         stringPtr(string(vcJWT)),
 			JWTFormat:                     exchange.JWTVC.Ptr(),
-			SignatureAlgorithmOrProofType: string(crypto.EdDSA),
+			SignatureAlgorithmOrProofType: signer.ALG,
 		}
 
-		presentationSubmissionBytes, err := exchange.BuildPresentationSubmission(*signer, presentationDefinition, []exchange.PresentationClaim{presentationClaim}, exchange.JWTVPTarget)
+		presentationSubmissionBytes, err := exchange.BuildPresentationSubmission(*signer, signer.ID, presentationDefinition, []exchange.PresentationClaim{presentationClaim}, exchange.JWTVPTarget)
 		if err != nil {
 			return generateError(err)
 		}
@@ -433,11 +483,10 @@ func createPresentationSubmission() js.Func {
 // @Error js.Value "An error object with a message describing the error"
 func verifyPresentationSubmission() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		keyType := crypto.Ed25519
 
 		presentationDefinitionInputString := args[0].String()
 		verifierDID := args[1].String()
-		verifierPrivateKeyBase58 := args[2].String()
+		issuerDIDPrivKeyJWKString := args[2].String()
 		presentationSubmissionJWT := args[3].String()
 
 		var presentationDefinition exchange.PresentationDefinition
@@ -446,31 +495,33 @@ func verifyPresentationSubmission() js.Func {
 			return generateError(err)
 		}
 
-		privateKeyBytes, err := base58.Decode(verifierPrivateKeyBase58)
+		var knownJWK jwx.PrivateKeyJWK
+		err = json.Unmarshal([]byte(issuerDIDPrivKeyJWKString), &knownJWK)
 		if err != nil {
 			return generateError(err)
 		}
 
-		privKeyFromBytes, err := crypto.BytesToPrivKey(privateKeyBytes, keyType)
+		signer, err := jwx.NewJWXSignerFromJWK(verifierDID, knownJWK)
 		if err != nil {
 			return generateError(err)
 		}
 
-		signer, err := crypto.NewJWTSigner(verifierDID, privKeyFromBytes)
+		verifier, err := signer.ToVerifier(verifierDID)
 		if err != nil {
 			return generateError(err)
 		}
 
-		verifier, err := signer.ToVerifier()
+		resolver, err := resolution.NewResolver([]resolution.Resolver{key.Resolver{}}...)
 		if err != nil {
 			return generateError(err)
 		}
 
-		err = exchange.VerifyPresentationSubmission(*verifier, exchange.JWTVPTarget, presentationDefinition, []byte(presentationSubmissionJWT))
+		verifiedSubmissionData, err := exchange.VerifyPresentationSubmission(context.Background(), *verifier, resolver, exchange.JWTVPTarget, presentationDefinition, []byte(presentationSubmissionJWT))
 		if err != nil {
 			return generateError(err)
 		}
 
+		fmt.Println(verifiedSubmissionData)
 		return js.ValueOf(true)
 	})
 }
@@ -500,14 +551,16 @@ func simplifyForJS(obj any) (any, error) {
 	return resultObj, nil
 }
 
-func StringPtr(s string) *string {
+// stringPtr - returns a pointer to a string
+func stringPtr(s string) *string {
 	return &s
 }
 
 func main() {
 	ch := make(chan struct{}, 0)
 	js.Global().Set("createDIDKey", createDIDKey())
-	js.Global().Set("resolveDid", resolveDID())
+	js.Global().Set("createDIDIon", createDIDIon())
+	js.Global().Set("resolveDID", resolveDID())
 	js.Global().Set("parseJWTCredential", parseJWTCredential())
 	js.Global().Set("createVerifiableCredential", createVerifiableCredential())
 	js.Global().Set("verifyJWTCredential", verifyJWTCredential())
