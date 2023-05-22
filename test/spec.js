@@ -15,8 +15,8 @@ describe('SSI tests', () => {
     expect(privKeyJWKJson['d'].length).toBeDefined()
   });
 
-  test('createDIDIon should create a DID with "did" in the ID', async () => {
-    const did = await SSI.createDIDIon();
+  test('createDIDION should create a DID with "did" in the ID', async () => {
+    const did = await SSI.createDIDION();
 
     expect(did.didDocument.id).toBeDefined()
     expect(did.didDocument.id.includes("did")).toBe(true);
@@ -56,7 +56,7 @@ describe('SSI tests', () => {
     expect(vc.vc.issuer).toEqual(didKey.didDocument.id)
     expect(vc.vcJWT.length).toBeGreaterThan(10)
 
-    const didIon = await SSI.createDIDIon();
+    const didIon = await SSI.createDIDION();
     expect(didIon.didDocument.id.includes("did")).toBe(true);
 
     credSubject = JSON.stringify({ "id": didIon.didDocument.id, "birthdate": "1975-01-01" })

@@ -76,13 +76,13 @@ func createDIDKey() js.Func {
 	})
 }
 
-// createDIDIon
+// createDIDION
 //
 // @Summary     Create DID:Ion pair
 // @Description Generate a DID Ion pair (using Ed25519) for ION protocol and return a JavaScript object containing the ION document and the private JWK
 // @Success     js.Object "{ didDocument: <object>, privKeyJWK: <string> }"
 // @Error js.Value "An error object with a message describing the error"
-func createDIDIon() js.Func {
+func createDIDION() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		_, privKey, err := crypto.GenerateKeyByKeyType(crypto.Ed25519)
 		if err != nil {
@@ -206,7 +206,7 @@ func resolveDID() js.Func {
 func createVerifiableCredential() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 3 {
-			return generateError(errors.New("invalid arg count, usage: createVerifiableCredential(didString,didBase58PrivateKey,subjectJSONString)"))
+			return generateError(errors.New("invalid arg count, usage: createVerifiableCredential(didString,privKeyJWK,subjectJSONString)"))
 		}
 
 		issuerDID := args[0].String()
@@ -384,14 +384,14 @@ func createPresentationDefinition() js.Func {
 // @Description Create a Presentation Request from a JSON string input and signing it with the provided signerDID and signerPrivateKeyBase58
 // @Param presentationDefinitionInputString string "The JSON string representing the Presentation Definition input"
 // @Param signerDID string "The DID string of the signer"
-// @Param signerPrivateKeyBase58 string "The base58 encoded private key of the signer"
+// @Param issuerDIDPrivKeyJWKString string "The private key of the signer"
 // @Param holderDID string "The DID string of the holder"
 // @Success js.Value "An object with a 'presentationRequestJWT' property containing the created and signed Presentation Request JWT"
 // @Error js.Value "An error object with a message describing the error"
 func createPresentationRequest() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 4 {
-			return generateError(errors.New("invalid arg count, usage: createPresentationRequest(presentationDefinitionInputString, signerDID, signerPrivateKeyBase58, holderDID)"))
+			return generateError(errors.New("invalid arg count, usage: createPresentationRequest(presentationDefinitionInputString, signerDID, issuerDIDPrivKeyJWKString, holderDID)"))
 		}
 
 		presentationDefinitionInputString := args[0].String()
@@ -434,14 +434,14 @@ func createPresentationRequest() js.Func {
 // @Description Create a Presentation Submission from a JSON string input and signing it with the provided signerDID and signerPrivateKeyBase58
 // @Param presentationDefinitionInputString string "The JSON string representing the Presentation Definition input"
 // @Param signerDID string "The DID string of the signer"
-// @Param signerPrivateKeyBase58 string "The base58 encoded private key of the signer"
+// @Param issuerDIDPrivKeyJWKString string "The private key of the signer"
 // @Param vcJWT string "The JWT string representing the Verifiable Credential"
 // @Success js.Value "An object with a 'presentationSubmissionJWT' property containing the created and signed Presentation Submission JWT"
 // @Error js.Value "An error object with a message describing the error"
 func createPresentationSubmission() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 4 {
-			return generateError(errors.New("invalid arg count, usage: createPresentationSubmission(presentationDefinitionInputString, signerDID, signerPrivateKeyBase58, vcJWT)"))
+			return generateError(errors.New("invalid arg count, usage: createPresentationSubmission(presentationDefinitionInputString, signerDID, issuerDIDPrivKeyJWKString, vcJWT)"))
 		}
 
 		presentationDefinitionInputString := args[0].String()
@@ -490,7 +490,7 @@ func createPresentationSubmission() js.Func {
 // @Description Verify a Presentation Submission by checking its signature and issuer against the provided verifierDID and verifierPrivateKeyBase58
 // @Param presentationDefinitionInputString string "The JSON string representing the Presentation Definition input"
 // @Param verifierDID string "The DID string of the verifier"
-// @Param verifierPrivateKeyBase58 string "The base58 encoded private key of the verifier"
+// @Param issuerDIDPrivKeyJWKString string "The base58 encoded private key of the verifier"
 // @Param presentationSubmissionJWT string "The JWT string representing the Presentation Submission"
 // @Success js.Value "true" "If the Presentation Submission is successfully verified"
 // @Error js.Value "An error object with a message describing the error"
@@ -571,7 +571,7 @@ func stringPtr(s string) *string {
 func main() {
 	ch := make(chan struct{}, 0)
 	js.Global().Set("createDIDKey", createDIDKey())
-	js.Global().Set("createDIDIon", createDIDIon())
+	js.Global().Set("createDIDION", createDIDION())
 	js.Global().Set("resolveDID", resolveDID())
 	js.Global().Set("parseJWTCredential", parseJWTCredential())
 	js.Global().Set("createVerifiableCredential", createVerifiableCredential())

@@ -21,7 +21,7 @@ async function initWasm() {
   go.run(wasmInstance);
   wasmExports = {
     createDIDKey: global.createDIDKey,
-    createDIDIon: global.createDIDIon,
+    createDIDION: global.createDIDION,
     resolveDID: global.resolveDID,
     parseJWTCredential: global.parseJWTCredential,
     createVerifiableCredential: global.createVerifiableCredential,
@@ -39,9 +39,9 @@ async function createDIDKey() {
   return wasmExports.createDIDKey();
 }
 
-async function createDIDIon() {
+async function createDIDION() {
   await isWasmInitialized;
-  return wasmExports.createDIDIon();
+  return wasmExports.createDIDION();
 }
 
 async function resolveDID(didString) {
@@ -92,7 +92,7 @@ async function verifyPresentationSubmission(presentationDefinitionInput, verifie
 
 module.exports = {
   createDIDKey,
-  createDIDIon,
+  createDIDION,
   resolveDID,
   parseJWTCredential,
   createVerifiableCredential,
