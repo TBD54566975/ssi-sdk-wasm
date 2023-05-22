@@ -33,7 +33,6 @@ describe('SSI tests', () => {
     expect(privKeyJWKJson['d'].length).toBeDefined()
   });
 
-  // TODO: Need to handle http deadlock - https://go.dev/src/syscall/js/func.go
   test('resolveDID should resolve dids', async () => {
     const didKey = await SSI.createDIDKey();
     expect(didKey.didDocument.id.includes("did")).toBe(true);
@@ -41,11 +40,11 @@ describe('SSI tests', () => {
     const resolvedDIDKey = await SSI.resolveDID(didKey.didDocument.id)
     expect(resolvedDIDKey.didDocument.id.includes("did")).toBe(true);
 
-    // const resolvedDIDWeb = await SSI.resolveDID("did:web:tbd.website")
-    // expect(resolvedDIDWeb.didDocument.id.includes("did")).toBe(true);
+    const resolvedDIDWeb = await SSI.resolveDID("did:web:tbd.website")
+    expect(resolvedDIDWeb.didDocument.id.includes("did")).toBe(true);
 
-    // const resolvedDIDIon = await SSI.resolveDID("did:ion:EiCsRhqxDDaq8d4sRyJriWQ-xfg6INxbT-baVTX8A6ghHQ")
-    // expect(resolvedDIDIon.didDocument.id.includes("did")).toBe(true);
+    const resolvedDIDIon = await SSI.resolveDID("did:ion:EiCsRhqxDDaq8d4sRyJriWQ-xfg6INxbT-baVTX8A6ghHQ")
+    expect(resolvedDIDIon.didDocument.id.includes("did")).toBe(true);
   });
 
   test('createVerifiableCredential should create a valid VC', async () => {

@@ -133,51 +133,64 @@ func createDIDIon() js.Func {
 // resolveDID
 //
 // @Summary Resolve a DID
-// @Description Resolve a given DID using a set of resolvers (KeyResolver, WebResolver, PKHResolver, and PeerResolver), and return the corresponding DID document as a JavaScript object
+// @Description Resolve a given DID using a set of resolvers (KeyResolver, WebResolver, PKHResolver, PeerResolver, and IonResolver), and return the corresponding DID document as a JavaScript object
 // @Param didString string "The DID string to be resolved"
 // @Success js.Object "{ <DID document fields> }"
 // @Error js.Value "An error object with a message describing the error"
 func resolveDID() js.Func {
-	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		if len(args) != 1 {
-			return generateError(errors.New("invalid arg count, need did as argument"))
-		}
+	return js.FuncOf(func(this js.Value, topArgs []js.Value) interface{} {
+		promiseConstructor := js.Global().Get("Promise")
+		return promiseConstructor.New(js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+			resolve := args[0]
+			reject := args[1]
 
-		didString := args[0].String()
+			go func() {
+				if len(topArgs) != 1 {
+					reject.Invoke(generateError(errors.New("invalid arg count, need did as argument")))
+					return
+				}
 
-		var err error
-		var doc *resolution.ResolutionResult
+				didString := topArgs[0].String()
 
-		if strings.Contains(didString, "ion:") {
-			ionResolver, err := ion.NewIONResolver(http.DefaultClient, "https://ion.tbddev.org/")
-			doc, err = ionResolver.Resolve(context.Background(), didString, nil)
-			if err != nil {
-				return generateError(err)
-			}
-		} else {
-			resolvers := []resolution.Resolver{key.Resolver{}, web.Resolver{}, pkh.Resolver{}, peer.Resolver{}}
-			resolver, err := resolution.NewResolver(resolvers...)
-			if err != nil {
-				return generateError(err)
-			}
-			doc, err = resolver.Resolve(nil, didString)
-			if err != nil {
-				return generateError(err)
-			}
-		}
+				var err error
+				var doc *resolution.ResolutionResult
 
-		resultBytes, err := json.Marshal(doc)
-		if err != nil {
-			return generateError(err)
-		}
+				if strings.Contains(didString, "ion:") {
+					ionResolver, err := ion.NewIONResolver(http.DefaultClient, "https://ion.tbddev.org/")
+					doc, err = ionResolver.Resolve(context.Background(), didString, nil)
+					if err != nil {
+						reject.Invoke(generateError(err))
+					}
+				} else {
+					resolvers := []resolution.Resolver{key.Resolver{}, web.Resolver{}, pkh.Resolver{}, peer.Resolver{}}
+					resolver, err := resolution.NewResolver(resolvers...)
+					if err != nil {
+						reject.Invoke(generateError(err))
+					}
+					doc, err = resolver.Resolve(nil, didString)
+					if err != nil {
+						reject.Invoke(generateError(err))
+					}
+				}
 
-		var resultObj map[string]any
-		err = json.Unmarshal(resultBytes, &resultObj)
-		if err != nil {
-			return generateError(err)
-		}
+				resultBytes, err := json.Marshal(doc)
+				if err != nil {
+					reject.Invoke(generateError(err))
+					return
+				}
 
-		return js.ValueOf(resultObj)
+				var resultObj map[string]any
+				err = json.Unmarshal(resultBytes, &resultObj)
+				if err != nil {
+					reject.Invoke(generateError(err))
+					return
+				}
+
+				resolve.Invoke(js.ValueOf(resultObj))
+			}()
+
+			return nil
+		}))
 	})
 }
 
@@ -516,12 +529,11 @@ func verifyPresentationSubmission() js.Func {
 			return generateError(err)
 		}
 
-		verifiedSubmissionData, err := exchange.VerifyPresentationSubmission(context.Background(), *verifier, resolver, exchange.JWTVPTarget, presentationDefinition, []byte(presentationSubmissionJWT))
+		_, err = exchange.VerifyPresentationSubmission(context.Background(), *verifier, resolver, exchange.JWTVPTarget, presentationDefinition, []byte(presentationSubmissionJWT))
 		if err != nil {
 			return generateError(err)
 		}
 
-		fmt.Println(verifiedSubmissionData)
 		return js.ValueOf(true)
 	})
 }

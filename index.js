@@ -46,7 +46,7 @@ async function createDIDIon() {
 
 async function resolveDID(didString) {
   await isWasmInitialized;
-  return wasmExports.resolveDID(didString);
+  return await wasmExports.resolveDID(didString);
 }
 
 async function createVerifiableCredential(issuerDID, issuerDIDPrivateKey, subjectJSONString) {
