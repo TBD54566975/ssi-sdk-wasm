@@ -1,4 +1,5 @@
 const SSI = require('../dist/index.js');
+const jose = require('jose');
 
 describe('SSI tests', () => {
   test('createDIDKey should create a DID with "did" in the ID', async () => {
@@ -103,7 +104,7 @@ describe('SSI tests', () => {
 
   test('verifyJWTCredential  should parse a valid jwt with created vc', async () => {
     const issuerDID = await SSI.createDIDKey();
-    const credSubject = JSON.stringify({"id": issuerDID.didDocument.id, "birthdate": "1975-01-01"})
+    const credSubject = JSON.stringify({ "id": issuerDID.didDocument.id, "birthdate": "1975-01-01" })
     const vc = await SSI.createVerifiableCredential(issuerDID.didDocument.id, issuerDID.privKeyJWK, credSubject)
     const authentic = await SSI.verifyJWTCredential(vc.vcJWT, issuerDID.didDocument.id);
     expect(authentic).toBe(true)
@@ -180,21 +181,21 @@ describe('SSI tests', () => {
     expect(presentationRequest.presentationRequestJWT.length).toBeGreaterThan(10)
   })
 
-  test('Create Presentation Submission and check if it is valid', async() =>{
+  test('Create Presentation Submission and check if it is valid', async () => {
     const presentationDefinitionInput = JSON.stringify({
-      "id":"test-id",
-      "input_descriptors":[
+      "id": "test-id",
+      "input_descriptors": [
         {
-          "id":"id-1",
-          "constraints":{
-            "fields":[
+          "id": "id-1",
+          "constraints": {
+            "fields": [
               {
-                "id":"issuer-input-descriptor",
-                "path":[
+                "id": "issuer-input-descriptor",
+                "path": [
                   "$.vc.issuer",
                   "$.issuer"
                 ],
-                "purpose":"need to check the issuer"
+                "purpose": "need to check the issuer"
               }
             ]
           }
@@ -205,7 +206,7 @@ describe('SSI tests', () => {
     const issuerDID = await SSI.createDIDKey();
     const subjectDID = await SSI.createDIDKey();
 
-    const credSubject = JSON.stringify({"id": subjectDID.didDocument.id, "birthdate": "1975-01-01"})
+    const credSubject = JSON.stringify({ "id": subjectDID.didDocument.id, "birthdate": "1975-01-01" })
     const vc = await SSI.createVerifiableCredential(issuerDID.didDocument.id, issuerDID.privKeyJWK, credSubject)
 
     const presentationSubmission = await SSI.createPresentationSubmission(presentationDefinitionInput, subjectDID.didDocument.id, issuerDID.privKeyJWK, vc.vcJWT)
@@ -214,5 +215,53 @@ describe('SSI tests', () => {
     // TODO: Fix signer
     // const verified = await SSI.verifyPresentationSubmission(presentationDefinitionInput, subjectDID.didDocument.id, issuerDID.privKeyJWK, presentationSubmission.presentationSubmissionJWT)
     // console.log(verified)
+  })
+
+  test('Sign submission payload', async () => {
+    const holderDID = await SSI.createDIDKey();
+    const privKeyJWKJson = JSON.parse(holderDID.privKeyJWK)
+    const secret = await jose.importJWK(privKeyJWKJson)
+
+    const submissionId = "thiscanbeanything"
+    const definitionId = "b46ca7f8-f896-4dc7-a660-cb1a652d84c7"
+    const selfSignedVC = "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa25uTnZOZFltcTg0REZNeHBSZDZDZ2l1VE5jcVltaWRQWjhYYlR6U3BtU3B1I3o2TWtubk52TmRZbXE4NERGTXhwUmQ2Q2dpdVROY3FZbWlkUFo4WGJUelNwbVNwdSIsInR5cCI6IkpXVCJ9.eyJleHAiOjI1ODAxMzAwODAsImlhdCI6MTY4NzgwNjAwNywiaXNzIjoiZGlkOmtleTp6Nk1rbm5Odk5kWW1xODRERk14cFJkNkNnaXVUTmNxWW1pZFBaOFhiVHpTcG1TcHUiLCJqdGkiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvdjEvY3JlZGVudGlhbHMvYWY5MmJjNTItOGQzYy00ZGYxLTgzNDctYmYwNDBjZDc1YWZkIiwibmJmIjoxNjg3ODA2MDA3LCJub25jZSI6IjUxY2JlMmEyLTc3NjAtNGU1OS1iYzU5LTFiNTY5ZWQwNjJjMSIsInN1YiI6ImRpZDprZXk6ejZNa3JqaXRCcERtOWVlaE44TmN3bWhFMkp4Q0p3UFlWVkpyaDJIQ1F0U3llakZGIiwidmMiOnsiQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiXSwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOiIiLCJpc3N1YW5jZURhdGUiOiIiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJhZGRpdGlvbmFsTmFtZSI6Ik1jbG92aW4iLCJkYXRlT2ZCaXJ0aCI6IjE5ODctMDEtMDIiLCJmYW1pbHlOYW1lIjoiQW5kcmVzIiwiZ2l2ZW5OYW1lIjoiVXJpYmUifX19.nJpKHMMNSIA8AiCBje1qVHRJS2BEmoKzlQmRS6D9m7NVnyMBSvu3xpUvi2BaqO0sqiPl3O6P-yLuBIIuegFEAA"
+
+    const alg = 'EdDSA'
+    const signData = {
+      iat: 1687806007,
+      iss: holderDID.didDocument.id,
+      vp: {
+        "@context": [
+          "https://www.w3.org/2018/credentials/v1"
+        ],
+        "holder": holderDID.didDocument.id,
+        "presentation_submission": {
+          "definition_id": definitionId,
+          "descriptor_map": [
+            {
+              "format": "jwt_vp",
+              "id": "wa_driver_license",
+              "path": "$.verifiableCredential[0]"
+            }
+          ],
+          "id": submissionId
+        },
+        "type": [
+          "VerifiablePresentation"
+        ],
+        "verifiableCredential": [
+          selfSignedVC
+        ]
+      }
+    };
+
+    const jwt = await new jose.SignJWT(signData)
+      .setProtectedHeader({ alg, kid: holderDID.didDocument.id + holderDID.didDocument.verificationMethod[0].id, typ: 'JWT' })
+      .setIssuedAt(Math.floor(Date.now() / 1000))
+      .setIssuer(holderDID.didDocument.id)
+      .setExpirationTime('2y')
+      .sign(secret)
+
+    console.log(jwt)
   })
 });
