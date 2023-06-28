@@ -20,6 +20,7 @@
     "dependencies": {
         "fs": "^0.0.1-security",
         "isomorphic-fetch": "^3.0.0",
+        "jose": "^4.14.4",
         "path": "^0.12.7"
     }
 }
