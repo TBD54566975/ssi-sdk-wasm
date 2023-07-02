@@ -18,8 +18,11 @@
         "jest": "^29.5.0"
     },
     "dependencies": {
+        "@iota/identity-wasm": "^0.7.0-alpha.5",
         "fs": "^0.0.1-security",
         "isomorphic-fetch": "^3.0.0",
-        "path": "^0.12.7"
+        "jose": "^4.14.4",
+        "path": "^0.12.7",
+        "uuid": "^9.0.0"
     }
 }
