@@ -235,7 +235,7 @@ describe('SSI tests', () => {
       .setExpirationTime('2h')
       .sign(secret)
 
-    console.log('signed jwt\n', jwt)
+    // console.log('signed jwt\n', jwt)
 
   })
 
