@@ -4,13 +4,13 @@ package main
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"syscall/js"
 	"time"
-
-	"crypto/ed25519"
 
 	"github.com/TBD54566975/ssi-sdk/credential"
 	"github.com/TBD54566975/ssi-sdk/credential/exchange"
@@ -22,7 +22,7 @@ import (
 	"github.com/TBD54566975/ssi-sdk/did/pkh"
 	"github.com/TBD54566975/ssi-sdk/did/resolution"
 	"github.com/TBD54566975/ssi-sdk/did/web"
-	"github.com/goccy/go-json"
+	_ "github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/mr-tron/base58"
 	"github.com/pkg/errors"
