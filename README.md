@@ -1,5 +1,11 @@
 # ssi-sdk-wasm
 
+# :warning: DEPRECATED :warning:
+
+> :exclamation: **WARNING**: This repository is no longer maintained or updated. Use at your own risk!
+
+---
+
 [![npm version](https://badge.fury.io/js/ssi-sdk-wasm.svg)](https://www.npmjs.com/package/ssi-sdk-wasm)
 
 `ssi-sdk-wasm` is a library that provides a WebAssembly (WASM) implementation for Self-Sovereign Identity (SSI) SDK. It enables SSI functionality in the browser and other JavaScript environments by compiling the SDK to a WASM file. This repository is responsible for building the `main.wasm` file and making it available as an npm package.
