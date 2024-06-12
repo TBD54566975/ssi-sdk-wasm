@@ -8,6 +8,8 @@
     "scripts": {
         "build": "esbuild index.js --bundle --format=cjs --platform=node --outfile=dist/index.js && npm run build:wasm && cp dist/main.wasm examples/react/public/",
         "build:wasm": "cd wasm && GOOS=js GOARCH=wasm go build -tags jwx_es256k -o ../dist/main.wasm && cd .. && echo \"\\033[0;32mcompiled wasm successfully!\\033[0m\"",
+        "buildtiny": "esbuild index.js --bundle --format=cjs --platform=node --outfile=dist/index.js && npm run build:tiny && cp dist/main.wasm examples/react/public/",
+        "build:tiny": "cd wasm && tinygo build -tags=\"jwx_es256k wasm js\" -o ../dist/main.wasm -target wasm && cd .. && echo \"\\033[0;32mcompiled wasm successfully!\\033[0m\"",
         "test": "jest"
     },
     "devDependencies": {
